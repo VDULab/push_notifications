@@ -26,8 +26,13 @@ function push_notifications_admin_overview_form($form, $form_state) {
   foreach ($result as $data) {
     $counts['total']++;
     switch ($data->type) {
-      case PUSH_NOTIFICATIONS_TYPE_ID_IOS: $counts['ios']++; break;
-      case PUSH_NOTIFICATIONS_TYPE_ID_ANDROID: $counts['android']++; break;
+      case PUSH_NOTIFICATIONS_TYPE_ID_IOS:
+        $counts['ios']++;
+        break;
+
+      case PUSH_NOTIFICATIONS_TYPE_ID_ANDROID:
+        $counts['android']++;
+        break;
     }
     if ($data->uid == 0) {
       $counts['anonymous']++;
@@ -212,7 +217,7 @@ function push_notifications_admin_form($form, $form_state) {
   $form['configuration_c2dm']['push_notifications_google_type'] = array(
     '#type' => 'radios',
     '#title' => t('Google Push Notifications Type'),
-    '#description' => t('Google\'s GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Google\'s C2DM service (Cloud 2 Device Messaging) was replaced by the Google Cloud Messaging Service (GCM). Each services requires a different authentication method.'),
+    '#description' => t("Google's GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Google's C2DM service (Cloud 2 Device Messaging) was replaced by the Google Cloud Messaging Service (GCM). Each services requires a different authentication method."),
     '#default_value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE,
     '#options' => array(
       PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM => t('Cloud 2 Device Messaging'),
