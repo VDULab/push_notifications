@@ -513,17 +513,14 @@ function push_notifications_send_message($recipients, $message) {
 /**
  * Send a simple message alert to a single account.
  *
- * @param object $account User account.
- * @param string $message Message to be included in payload.
- * @return mixed
+ * @param object $account
+ *   Can be either a full user object or a $uid.
+ * @param string $message
+ *   Message to be included in payload.
  */
 function push_notifications_send_message_account($account, $message) {
-  if (!is_object($account) || !is_numeric($account->uid)) {
-    watchdog('push_notifications', t('Not a valid account object.'));
-    return false;
-  }
-
-  push_notifications_send_message(array($account->uid), $message);
+  $uid = is_object($account) ? $account->uid : (int) $account;
+  push_notifications_send_message(array($uid), $message);
 }
 
 /**
