@@ -2,13 +2,15 @@
 
 /**
  * @file
- * Admin files for Push Notifications module.
+ * Administration forms for Push Notifications.
  */
 
 /**
  * Overview form for Push Notification Settings.
+ *
+ * @ingroup forms
  */
-function push_notifications_admin_overview_form($form_state) {
+function push_notifications_admin_overview_form($form, $form_state) {
   // Load all tokens stored in the database.
   $query = db_select('push_notifications_tokens', 'pnt');
   $query->fields('pnt', array('uid', 'type', 'language'));
@@ -35,13 +37,10 @@ function push_notifications_admin_overview_form($form_state) {
     }
   }
 
-  $form = array();
-
-  $statistics_description = (!$counts['total']) ? t('No tokens stored yet.') : null;
   $form['statistics'] = array(
     '#type' => 'fieldset',
-    '#title' => 'Push Notification Statistics',
-    '#description' => $statistics_description,
+    '#title' => t('Push Notification Statistics'),
+    '#description' => $counts['total'] ? NULL : t('No tokens stored yet.'),
   );
 
   $form['statistics']['total'] = array(
@@ -76,7 +75,7 @@ function push_notifications_admin_overview_form($form_state) {
 
   $form['languages'] = array(
     '#type' => 'fieldset',
-    '#title' => 'Push Notification Languages',
+    '#title' => t('Push Notification Languages'),
     '#description' => t('Languages used across all push notification recipients'),
   );
 
@@ -98,15 +97,17 @@ function push_notifications_admin_overview_form($form_state) {
   return $form;
 }
 
+
 /**
  * Form callback for Push Notifications Settings.
+ *
+ * @see push_notifications_admin_form_validate()
+ * @see push_notifications_admin_form_submit()
+ * @see push_notifications_regenerate_certificate_string_submit()
+ *
+ * @ingroup forms
  */
-function push_notifications_admin_form($form_state) {
-  $form = array();
-
-  // Add JavaScript for Google push notification selector.
-  drupal_add_js(drupal_get_path('module', 'push_notifications') . '/scripts/push_notifications_admin.js');
-
+function push_notifications_admin_form($form, $form_state) {
   $form['configuration_general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General Push Notifications Settings'),
@@ -119,26 +120,23 @@ function push_notifications_admin_form($form_state) {
     '#default_value' => variable_get('push_notifications_require_enabled_language', 0),
   );
 
-  $replacements_privatemsg = array(
-    '!privatemsg' => l('PrivateMSG', 'http://drupal.org/project/privatemsg/', array('html' => true, 'attributes' => array('target' => '_blank'))),
-    '!privatemsg_status' => (module_exists('privatemsg')) ? 'successfully installed' : 'not installed',
-  );
   $form['configuration_general']['push_notifications_privatemsg_integration'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable integration with PrivateMSG module'),
-    '#description' => t('Check this to deliver messages sent through the !privatemsg module to all recipients with at least one valid device token. Requires !privatemsg module 7.x-1.x (status: !privatemsg_status)', $replacements_privatemsg),
+    '#title' => t('Enable integration with Privatemsg module'),
+    '#description' => t('Check this to deliver messages sent through the <a href="https://drupal.org/project/privatemsg" target="_blank">Privatemsg</a> module to all recipients with at least one valid device token. Requires !privatemsg module 7.x-1.x (status: !privatemsg_status)', array(
+      '!privatemsg_status' => (module_exists('privatemsg')) ? t('successfully installed') : t('not installed'),
+    )),
     '#default_value' => variable_get('push_notifications_privatemsg_integration', 0),
   );
 
-  $configuration_apns_replacements = array(
-    '!link' => l(t('this tutorial'), 'http://blog.boxedice.com/2009/07/10/how-to-build-an-apple-push-notification-provider-server-tutorial/', array('attributes' => array('target' => '_blank'))),
-    '!cert_name_development' => 'apns-development' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem',
-    '!cert_name_production' => 'apns-production' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem',
-  );
   $form['configuration_apns'] = array(
     '#type' => 'fieldset',
     '#title' => t('Apple Push Notifications'),
-    '#description' => t('Configure Push Notifications for Apple\'s Push Notification Server. Select your environment. Both environments require the proper certificates in the \'certificates\' folder of this module.<br />The filename for the development certificate should be \'!cert_name_development\', the production certificate should be \'!cert_name_production\'. See !link for instructions on creating certificates.', $configuration_apns_replacements),
+    '#description' => t("Configure Push Notifications for Apple's Push Notification Server. Select your environment. Both environments require the proper certificates in the \"certificates\" folder of this module.<br />The filename for the development certificate should be \"<strong>!cert_name_development</strong>\", the production certificate should be \"<strong>!cert_name_production</strong>\". See <a href=\"!tutorial\" target=\"_blank\">this tutorial</a> for instructions on creating certificates.", array(
+      '!tutorial' => "https://blog.serverdensity.com/how-to-build-an-apple-push-notification-provider-server-tutorial/",
+      '!cert_name_development' => 'apns-development' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem',
+      '!cert_name_production' => 'apns-production' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem',
+    )),
   );
 
   if (variable_get('push_notifications_apns_certificate_random', '') == '') {
@@ -164,8 +162,8 @@ function push_notifications_admin_form($form_state) {
     '#title' => t('APNS Environment'),
     '#description' => t('Select the active APNS Environment. Please note that development certificates do not work with apps released in the Apple app store; production certificates only work with apps released in the app store.'),
     '#options' => array(
-      0 => 'Development',
-      1 => 'Production',
+      0 => t('Development'),
+      1 => t('Production'),
     ),
     '#default_value' => variable_get('push_notifications_apns_environment', 0),
   );
@@ -173,7 +171,7 @@ function push_notifications_admin_form($form_state) {
   $form['configuration_apns']['stream_context_limit'] = array(
     '#type' => 'select',
     '#title' => t('Stream Context Limit'),
-    '#description' => t('Defines the amount of messages sent per stream limit, i.e. how many notifications are sent per connection created with Apple\'s servers. The higher the limit, the faster the message delivery. If the limit is too high, messages might not get delivered at all. Unclear (to me) what Apple\'s <em>actual</em> limit is.'),
+    '#description' => t("Defines the amount of messages sent per stream limit, i.e. how many notifications are sent per connection created with Apple's servers. The higher the limit, the faster the message delivery. If the limit is too high, messages might not get delivered at all. Unclear (to me) what Apple's <em>actual</em> limit is."),
     '#options' => drupal_map_assoc(array(1, 5, 10, 25, 50)),
     '#default_value' => variable_get('push_notifications_apns_stream_context_limit', 1),
   );
@@ -188,17 +186,17 @@ function push_notifications_admin_form($form_state) {
   $form['configuration_apns']['push_notifications_apns_certificate_folder'] = array(
     '#type' => 'textfield',
     '#title' => t('APNS Certificate Folder Path'),
-    '#description' => t('The preferred location for the certificate files is a folder outside of your web root, i.e. a folder not accessible through the Internet. Specify the full path here, e.g. \'/users/danny/drupal_install/certificates/\'. If you are using the \'certificates\' folder within the module directory, leave this field blank.'),
+    '#description' => t("The preferred location for the certificate files is a folder outside of your web root, i.e. a folder not accessible through the Internet. Specify the full path here, e.g. '/users/danny/drupal_install/certificates/'. If you are using the 'certificates' folder within the module directory, leave this field blank."),
     '#default_value' => variable_get('push_notifications_apns_certificate_folder', ''),
   );
 
   $form['configuration_apns']['push_notifications_set_entrust_certificate'] = array(
     '#type' => 'checkbox',
     '#title' => t('Set Entrust root certificate'),
-    '#description' => t('If APNS does not work and you are getting errors like %php_error_string your server might be missing the Entrust root certificate. Enable this to explicitely add it when establishing a connection to APNS. See more in this !link_kb and the !link_entrust.', array(
+    '#description' => t('If APNS does not work and you are getting errors like %php_error_string your server might be missing the Entrust root certificate. Enable this to explicitely add it when establishing a connection to APNS. See more in this <a href="!link_kb" target="_blank">Knowledgebase Article</a> and the <a href="!link_entrust" target="_blank">Entrust Root Certificate Downloads</a>.', array(
       '%php_error_string' => 'Warning: stream_socket_client() [...]',
-      '!link_entrust' => l('Entrust Root Certificate Downloads', 'https://www.entrust.com/get-support/ssl-certificate-support/root-certificate-downloads/', array('attributes' => array('target' => '_blank'))),
-      '!link_kb' => l('Knowledgebase Article', 'http://stackoverflow.com/questions/4817520/why-ssl-of-entrust-ssl-certificate-is-required-for-apns', array('attributes' => array('target' => '_blank'))),
+      '!link_entrust' => 'https://www.entrust.com/get-support/ssl-certificate-support/root-certificate-downloads/',
+      '!link_kb' => 'http://stackoverflow.com/questions/4817520/why-ssl-of-entrust-ssl-certificate-is-required-for-apns',
     )),
     '#default_value' => variable_get('push_notifications_set_entrust_certificate', 0),
   );
@@ -206,18 +204,20 @@ function push_notifications_admin_form($form_state) {
   $form['configuration_c2dm'] = array(
     '#type' => 'fieldset',
     '#title' => t('Google Push Notifications'),
-    '#description' => t('Requires a valid Google Cloud Messaging or C2DM account. !signup for Google Cloud Messaging. Google does not accept new signups for C2DM.', array('!signup' => l(t('Signup here'), 'http://developer.android.com/guide/google/gcm/gs.html', array('attributes' => array('target' => '_blank'))))),
+    '#description' => t('Requires a valid Google Cloud Messaging or C2DM account. <a href="!signup" target="_blank">Signup here</a> for Google Cloud Messaging. Google does not accept new signups for C2DM.', array(
+      '!signup' => 'http://developer.android.com/guide/google/gcm/gs.html',
+    )),
   );
 
   $form['configuration_c2dm']['push_notifications_google_type'] = array(
     '#type' => 'radios',
     '#title' => t('Google Push Notifications Type'),
-    '#description' => t('Google\'s GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Google\'s C2DM service (Cloud 2 Device Messaging) was replaced by the Google Cloud Messaging Service (GCM). Each services requires a different authentication method. '),
+    '#description' => t('Google\'s GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Google\'s C2DM service (Cloud 2 Device Messaging) was replaced by the Google Cloud Messaging Service (GCM). Each services requires a different authentication method.'),
     '#default_value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE,
     '#options' => array(
-      PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM => 'Cloud 2 Device Messaging',
-      PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM => 'Google Cloud Messaging',
-      PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM => 'Firebase Cloud Messaging'
+      PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM => t('Cloud 2 Device Messaging'),
+      PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM => t('Google Cloud Messaging'),
+      PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM => t('Firebase Cloud Messaging'),
     ),
   );
 
@@ -226,9 +226,13 @@ function push_notifications_admin_form($form_state) {
     '#type' => 'fieldset',
     '#title' => t('Cloud 2 Device Messaging Settings'),
     '#description' => t('Enter your C2DM credentials.'),
-      '#attributes' => array(
-        'style' => (PUSH_NOTIFICATIONS_GOOGLE_TYPE != PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM) ? 'display:none' : '',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="push_notifications_google_type"]' => array(
+          'value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM,
+        ),
       ),
+    ),
   );
 
   $form['configuration_c2dm']['c2dm_credentials']['push_notifications_c2dm_username'] = array(
@@ -249,10 +253,13 @@ function push_notifications_admin_form($form_state) {
     '#type' => 'fieldset',
     '#title' => t('Google Cloud Messaging'),
     '#description' => t('Enter your Google Cloud Messaging details'),
-      '#attributes' => array(
-        'style' => (PUSH_NOTIFICATIONS_GOOGLE_TYPE != PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM) ? 'display:none' : '',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="push_notifications_google_type"]' => array(
+          'value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM,
+        ),
       ),
-
+    ),
   );
 
   $form['configuration_c2dm']['gcm_credentials']['push_notifications_gcm_api_key'] = array(
@@ -266,8 +273,12 @@ function push_notifications_admin_form($form_state) {
     '#type' => 'fieldset',
     '#title' => t('Firebase Cloud Messaging'),
     '#description' => t('Enter your Firebase Cloud Messaging details'),
-    '#attributes' => array(
-      'style' => (PUSH_NOTIFICATIONS_GOOGLE_TYPE != PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM) ? 'display:none' : '',
+    '#states' => array(
+      'visible' => array(
+        ':input[name="push_notifications_google_type"]' => array(
+          'value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM,
+        ),
+      ),
     ),
   );
 
@@ -288,16 +299,16 @@ function push_notifications_admin_form($form_state) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => 'Save Configuration',
+    '#value' => t('Save Configuration'),
   );
 
   return $form;
 }
 
-
-
 /**
  * Validation handler for push notification configuration form.
+ *
+ * @see push_notifications_admin_form_submit()
  */
 function push_notifications_admin_form_validate($form, &$form_state) {
   // If custom certificate directory is set, ensure the directory exists.
@@ -309,10 +320,10 @@ function push_notifications_admin_form_validate($form, &$form_state) {
   }
 }
 
-
-
 /**
  * Submit callback for push notification configuration page.
+ *
+ * @see push_notifications_admin_form_validate()
  */
 function push_notifications_admin_form_submit($form, &$form_state) {
   // Module settings.
@@ -329,6 +340,7 @@ function push_notifications_admin_form_submit($form, &$form_state) {
       variable_set('push_notifications_apns_host', 'gateway.sandbox.push.apple.com');
       variable_set('push_notifications_apns_certificate', 'apns-development' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem');
       break;
+
     case 1:
       // Set the variables for the apns production environment.
       variable_set('push_notifications_apns_environment', $apns_environment);
@@ -379,30 +391,29 @@ function push_notifications_admin_form_submit($form, &$form_state) {
   variable_set('push_notifications_set_entrust_certificate', $form_state['values']['push_notifications_set_entrust_certificate']);
 
   $replacements = array(
-    '@environment' => ($apns_environment) ? "Production" : "Development",
+    '@environment' => ($apns_environment) ? t("Production") : t("Development"),
   );
   drupal_set_message(t('The APNS environment was successfully set to "@environment".', $replacements));
 }
 
-
-
 /**
-* Form callback for regenerating the APNS certificate string.
-*/
+ * Submit callback for regenerating the APNS certificate string.
+ */
 function push_notifications_regenerate_certificate_string_submit($form, &$form_state) {
   _push_notifications_set_random_certificate_string();
-  drupal_set_message('The names for your APNS certificates were successfully changed. Please rename both certificate files.');
-  drupal_goto('admin/config/services/push_notifications/configure');
+  drupal_set_message(t('The names for your APNS certificates were successfully changed. Please rename both certificate files.'));
 }
-
 
 
 /**
  * Form callback for sending a mass-push notification.
+ *
+ * @see push_notifications_mass_push_form_validate()
+ * @see push_notifications_mass_push_form_submit()
+ *
+ * @ingroup forms
  */
-function push_notifications_mass_push_form($form_state) {
-  $form = array();
-
+function push_notifications_mass_push_form($form, $form_state) {
   $form['message'] = array(
     '#type' => 'fieldset',
     '#title' => t('Push Notification Message'),
@@ -449,20 +460,23 @@ function push_notifications_mass_push_form($form_state) {
     '#description' => t('Select the recipients for this push message'),
     '#options' => $recipients_options,
   );
+  if (count($recipients_options) == 1) {
+    $form['recipients']['#default_value'] = array(key($recipients_options));
+  }
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => 'Send Push Notification',
+    '#value' => t('Send Push Notification'),
     '#weight' => 50,
   );
 
   return $form;
 }
 
-
-
 /**
  * Validation handler for sending out a mass-push notification.
+ *
+ * @see push_notifications_mass_push_form_submit()
  */
 function push_notifications_mass_push_form_validate($form, &$form_state) {
   $recipients = $form_state['values']['recipients'];
@@ -495,15 +509,15 @@ function push_notifications_mass_push_form_validate($form, &$form_state) {
   }
 }
 
-
-
 /**
  * Submit handler for sending out a mass-push notification.
+ *
+ * @see push_notifications_mass_push_form_validate()
  */
 function push_notifications_mass_push_form_submit($form, &$form_state) {
   $recipients = $form_state['values']['recipients'];
   $payload = $form_state['values']['payload'];
-  $language = (isset($form_state['values']['language'])) ? $form_state['values']['language'] : false;
+  $language = (isset($form_state['values']['language'])) ? $form_state['values']['language'] : FALSE;
 
   // Send message to all iOS recipients.
   if (!empty($recipients['ios'])) {
@@ -535,12 +549,12 @@ function push_notifications_mass_push_form_submit($form, &$form_state) {
       // Determine which method to use for Google push notifications.
       switch (PUSH_NOTIFICATIONS_GOOGLE_TYPE) {
         case PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM:
-        $result = push_notifications_c2dm_send_message($tokens_android, $payload);
-        break;
+          $result = push_notifications_c2dm_send_message($tokens_android, $payload);
+          break;
 
         case PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM:
-        $result = push_notifications_gcm_send_message($tokens_android, $payload);
-        break;
+          $result = push_notifications_gcm_send_message($tokens_android, $payload);
+          break;
 
         case PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM:
           $result = push_notifications_fcm_send_message($tokens_android, $payload);
