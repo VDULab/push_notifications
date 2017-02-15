@@ -1377,7 +1377,7 @@ function _push_notifications_get_apns_certificate() {
     watchdog('push_notifications', 'Cannot find apns certificate file at @path', array('@path' => $path), WATCHDOG_WARNING, l(t('settings'), 'admin/config/services/push_notifications/configure'));
   }
 
-  return $path;
+  return drupal_realpath($path);
 }
 
 
