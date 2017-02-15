@@ -73,9 +73,9 @@ define('PUSH_NOTIFICATIONS_GCM_SERVER_POST_URL', variable_get('push_notification
 // FCM Variables
 //
 // FCM Cloud Messaging TokenSender ID
-define('PUSH_NOTIFICATIONS_FCM_CLOUD_MESSAGING_TOKEN', variable_get('push_notifications_fcm_cloud_messaging_token', ''));
-// FCM Cloud Messaging Server Key
 define('PUSH_NOTIFICATIONS_FCM_SERVER_KEY', variable_get('push_notifications_fcm_server_key', ''));
+// FCM Cloud Messaging Server Key
+define('PUSH_NOTIFICATIONS_FCM_LEGACY_SERVER_KEY', variable_get('push_notifications_fcm_legacy_server_key', ''));
 // FCM Server Post URL
 define('PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL', variable_get('push_notifications_fcm_server_post_url', 'https://fcm.googleapis.com/fcm/send'));
 
@@ -1024,7 +1024,7 @@ function push_notifications_gcm_send_message($tokens, $payload) {
  *   - success         (# boolean)
  *   - message         (Prepared result message)
  */
-function push_notifications_fcm_send_message($tokens, $payload) {
+function push_notifications_fcm_send_message($tokens, $payload, $options = array()) {
   if (!is_array($tokens) || empty($payload) || (is_array($tokens) && empty($tokens))) {
     return FALSE;
   }
@@ -1063,6 +1063,7 @@ function push_notifications_fcm_send_message($tokens, $payload) {
     $data['registration_ids'] = $bundle_tokens;
     $data['collapse_key'] = (string) time();
     $data['data']['message'] = $payload['alert'];
+    $data = array_merge($data, $options);
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL);
