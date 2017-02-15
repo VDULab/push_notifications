@@ -1239,7 +1239,7 @@ function push_notifications_used_languages() {
 
   if (!empty($used_languages)) {
     // Sort the languages alphabetically.
-    $used_langauges = asort($used_languages);
+    asort($used_languages);
     // Add an "All" option.
     array_unshift($used_languages, 'All Recipients');
   }

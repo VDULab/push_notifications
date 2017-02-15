@@ -116,7 +116,7 @@ function push_notifications_admin_form($form, $form_state) {
   $form['configuration_general']['push_notifications_require_enabled_language'] = array(
     '#type' => 'checkbox',
     '#title' => t('Only allow enabled languages'),
-    '#description' => t('When setting a device token, only allow languages that are enabled on this site (instead of all valid langauges)'),
+    '#description' => t('When setting a device token, only allow languages that are enabled on this site (instead of all valid languages)'),
     '#default_value' => variable_get('push_notifications_require_enabled_language', 0),
   );
 
