@@ -471,11 +471,26 @@ function push_notifications_check_payload_size($payload = '') {
 /**
  * Send a simple message alert to an array of recipients.
  *
- * @param array $recipients Array of user ids.
- * @param string $message Message to be included in payload.
- * @return mixed Flag to indicate if delivery was successful.
+ * @param array $recipients
+ *   Array of user ids.
+ * @param array|string $message
+ *   Message to be included in payload or an array containg the message at the
+ *   'alert' key of the array.
+ *
+ * @return mixed
+ *   Flag to indicate if delivery was successful.
  */
 function push_notifications_send_message($recipients, $message) {
+  // If message is an array then we actually have a $payload array.
+  if (is_array($message)) {
+    $payload = $message;
+    $message = $payload['alert'];
+  }
+  elseif (is_string($message)) {
+    // Convert the payload into the correct format for delivery.
+    $payload = array('alert' => $message);
+  }
+
   if (!is_array($recipients) || !is_string($message)) {
     return FALSE;
   }
@@ -488,9 +503,6 @@ function push_notifications_send_message($recipients, $message) {
 
   // Shorten the message characters / 8 bit.
   $message = truncate_utf8($message, PUSH_NOTIFICATIONS_APNS_PAYLOAD_SIZE_LIMIT, TRUE, TRUE);
-
-  // Convert the payload into the correct format for delivery.
-  $payload = array('alert' => $message);
 
   // Determine if any of the recipients have one or multiple tokens stored.
   $tokens = array();
