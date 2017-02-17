@@ -1140,6 +1140,7 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
  *   - Language (key = language)
  *   - Device type (key = type_id)
  *   - Account type (key = account_type)
+ *   - Token (key = token)
  * @param $raw
  *   Boolean, set true to retrieve the raw query results.
  *
@@ -1178,6 +1179,11 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
         $query->condition('pnt.uid', 0, '!=');
         break;
     }
+  }
+
+  // Filter by token.
+  if (array_key_exists('token', $filters)) {
+    $query->condition('pnt.token', $filters['token']);
   }
 
   $result = $query->execute();

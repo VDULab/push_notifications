@@ -470,6 +470,13 @@ function push_notifications_mass_push_form($form, $form_state) {
     $form['recipients']['#default_value'] = array(key($recipients_options));
   }
 
+  $form['token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Token'),
+    '#description' => t('Place a token here to send the message to only one recipient.'),
+    '#maxlength' => 255,
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Send Push Notification'),
@@ -503,7 +510,7 @@ function push_notifications_mass_push_form_validate($form, &$form_state) {
   $form_state['values']['payload'] = $payload;
 
   // Make sure at least one recipient (group) is selected.
-  if (empty($recipients['ios']) && empty($recipients['android'])) {
+  if (empty($recipients['ios']) && empty($recipients['android']) && empty($form_state['values']['token'])) {
     form_set_error('recipients', t('No message was sent. Please select at least one recipient group.'));
   }
 
@@ -522,8 +529,29 @@ function push_notifications_mass_push_form_validate($form, &$form_state) {
  */
 function push_notifications_mass_push_form_submit($form, &$form_state) {
   $recipients = $form_state['values']['recipients'];
+  $token = $form_state['values']['token'];
   $payload = $form_state['values']['payload'];
   $language = (isset($form_state['values']['language'])) ? $form_state['values']['language'] : FALSE;
+
+  // Sending to a single token.
+  if ($token) {
+    $type = db_select('push_notifications_tokens', 'pnt')
+      ->fields('pnt', array('type'))
+      ->condition('pnt.token', $token)
+      ->execute()
+      ->fetchField();
+
+    // Ensure that the type for this token is enabled.
+    switch ($type) {
+      case PUSH_NOTIFICATIONS_TYPE_ID_IOS:
+        $recipients['ios'] = 1;
+        break;
+
+      case PUSH_NOTIFICATIONS_TYPE_ID_ANDROID:
+        $recipients['android'] = 1;
+        break;
+    }
+  }
 
   // Send message to all iOS recipients.
   if (!empty($recipients['ios'])) {
@@ -531,6 +559,7 @@ function push_notifications_mass_push_form_submit($form, &$form_state) {
     $tokens_ios = push_notifications_get_tokens(array(
       'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_IOS,
       'language' => $language,
+      'token' => $token,
     ));
     if (!empty($tokens_ios)) {
       // Convert the payload into the correct format for APNS.
@@ -550,6 +579,7 @@ function push_notifications_mass_push_form_submit($form, &$form_state) {
     $tokens_android = push_notifications_get_tokens(array(
       'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
       'language' => $language,
+      'token' => $token,
     ));
     if (!empty($tokens_android)) {
       // Determine which method to use for Google push notifications.
