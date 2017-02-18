@@ -21,6 +21,16 @@ function push_notifications_views_data() {
     'weight' => -10,
   );
 
+  //Add relation with users
+  $data['push_notifications_tokens']['table']['join'] = array(
+	  'users' => array(
+	    'handler' => 'views_join',
+	    'left_table' => 'users',
+      'left_field' => 'uid',
+      'field' => 'uid',
+    ),
+  );
+
   // Push Token.
   $data['push_notifications_tokens']['token'] = array(
     'title' => t('Token'),
