@@ -1162,7 +1162,7 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   }
 
   // Filter by language, if required.
-  if (array_key_exists('language', $filters) && is_string($filters['language'])) {
+  if (array_key_exists('language', $filters) && $filters['language']) {
     $query->condition('pnt.language', $filters['language']);
   }
 
