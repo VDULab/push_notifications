@@ -1182,7 +1182,7 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   }
 
   // Filter by token.
-  if (array_key_exists('token', $filters)) {
+  if (array_key_exists('token', $filters) && $filters['token']) {
     $query->condition('pnt.token', $filters['token']);
   }
 
