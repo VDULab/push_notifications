@@ -1072,6 +1072,12 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     $data['registration_ids'] = $bundle_tokens;
     $data['collapse_key'] = (string) time();
     $data['data']['message'] = $payload['alert'];
+
+    // Must be present for Android.
+    if (!isset($data['notification']['click_action'])) {
+      $data['notification']['click_action'] = 'FCM_PLUGIN_ACTIVITY';
+    }
+
     $data = array_merge($data, $options);
 
     $curl = curl_init();
