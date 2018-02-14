@@ -434,7 +434,7 @@ function push_notifications_open_apns() {
   // Open an Internet socket connection.
   $apns = stream_socket_client('ssl://' . PUSH_NOTIFICATIONS_APNS_HOST . ':' . PUSH_NOTIFICATIONS_APNS_PORT, $error, $error_string, 2, STREAM_CLIENT_CONNECT, $stream_context);
   if (!$apns) {
-    watchdog('push_notifications', 'Connection to Apple Notification Server failed.', NULL, WATCHDOG_ERROR);
+    watchdog('push_notifications', 'Connection to Apple Notification Server failed.', array(), WATCHDOG_ERROR);
     return FALSE;
   }
   else {
@@ -519,7 +519,7 @@ function push_notifications_send_message($recipients, $message) {
  */
 function push_notifications_send_message_account($account, $message) {
   if (!is_object($account) || !is_numeric($account->uid)) {
-    watchdog('push_notifications', t('Not a valid account object.'));
+    watchdog('push_notifications', 'Not a valid account object.');
     return false;
   }
 
@@ -539,7 +539,7 @@ function push_notifications_send_message_account($account, $message) {
  */
 function push_notifications_send_message_bulk($message = '', $target_group = '') {
   if (empty($message)) {
-    watchdog('push_notifications', t('Message cannot be empty'));
+    watchdog('push_notifications', 'Message cannot be empty');
     return false;
   }
 
@@ -698,12 +698,10 @@ function push_notifications_apns_send_message($tokens, $payload) {
       $result['count_success']++;
     }
     elseif ($success == 0 || $success == FALSE || $success < strlen($apns_message)) {
-      $error_message = array(
-        'message' => t('APNS message could not be sent.'),
-        'token' => 'Token: ' . $token,
-        'data' => 'fwrite returned: ' . $success,
-      );
-      watchdog('push_notifications', implode($error_message, '<br />'));
+      watchdog('push_notifications', 'APNS message could not be sent.<br />Token: @token<br />fwrite() returned: @success', array(
+        '@toekn' => $token,
+        '@success' => $success,
+      ));
     }
 
     // Reset the stream counter if no more messages should
@@ -772,7 +770,7 @@ function push_notifications_c2dm_token() {
   $auth_token = $matches[1];
 
   if (!$auth_token) {
-    watchdog('push_notifications', 'Google C2DM Server did not provide an authentication token.', NULL, WATCHDOG_ERROR);
+    watchdog('push_notifications', 'Google C2DM Server did not provide an authentication token.', array(), WATCHDOG_ERROR);
   }
   else {
     return $auth_token;
@@ -853,13 +851,17 @@ function push_notifications_c2dm_send_message($tokens, $payload) {
 
     // If Google's server returns a reply, but that reply includes an error, log the error message.
     if ($info['http_code'] == 200 && (isset($response) && preg_match('/Error/', $response))) {
-      watchdog('push_notifications', "Google's Server returned an error: " . $response, NULL, WATCHDOG_ERROR);
+      watchdog('push_notifications', "Google's Server returned an error: @response", array(
+        '@response' => $response,
+      ), WATCHDOG_ERROR);
 
       // If the device token is invalid or not registered (anymore because the user
       // has uninstalled the application), remove this device token.
       if (preg_match('/InvalidRegistration/', $response) || preg_match('/NotRegistered/', $response)) {
         push_notifications_purge_token($token, PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
-        watchdog('daddyhunt_apns', 'C2DM token not valid anymore. Removing token ' . $token);
+        watchdog('push_notifications', 'C2DM token not valid anymore. Removing token @token', array(
+          '@token' => $token,
+        ));
       }
     }
 
@@ -967,7 +969,9 @@ function push_notifications_gcm_send_message($tokens, $payload) {
     // If Google's server returns a reply, but that reply includes an error,
     // log the error message.
     if ($info['http_code'] == 200 && (!empty($response->failure))) {
-      watchdog('push_notifications', "Google's Server returned an error: " . $response_raw, NULL, WATCHDOG_ERROR);
+      watchdog('push_notifications', "Google's Server returned an error: @response", array(
+        '@response' => $response_raw,
+      ), WATCHDOG_ERROR);
 
       // Analyze the failure.
       foreach ($response->results as $token_index => $message_result) {
@@ -976,7 +980,9 @@ function push_notifications_gcm_send_message($tokens, $payload) {
           // has uninstalled the application), remove this device token.
           if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
             push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
-            watchdog('push_notifications', 'GCM token not valid anymore. Removing token ' . $bundle_tokens[$token_index]);
+            watchdog('push_notifications', 'GCM token not valid anymore. Removing token @token', array(
+              '@token' => $bundle_tokens[$token_index],
+            ));
           }
         }
       }
@@ -1083,7 +1089,9 @@ function push_notifications_fcm_send_message($tokens, $payload) {
     // If Google's server returns a reply, but that reply includes an error,
     // log the error message.
     if ($info['http_code'] == 200 && (!empty($response->failure))) {
-      watchdog('push_notifications', "Google's Server returned an error: " . $response_raw, NULL, WATCHDOG_ERROR);
+      watchdog('push_notifications', "Google's Server returned an error: @response", array(
+        '@response' => $response_raw,
+      ), WATCHDOG_ERROR);
 
       // Analyze the failure.
       foreach ($response->results as $token_index => $message_result) {
@@ -1092,7 +1100,9 @@ function push_notifications_fcm_send_message($tokens, $payload) {
           // has uninstalled the application), remove this device token.
           if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
             push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
-            watchdog('push_notifications', 'FCM token not valid anymore. Removing token ' . $bundle_tokens[$token_index]);
+            watchdog('push_notifications', 'FCM token not valid anymore. Removing token @token', array(
+              '@response' => $bundle_tokens[$token_index],
+            ));
           }
         }
       }
@@ -1333,7 +1343,7 @@ function push_notifications_apns_feedback_service() {
   fclose($apns);
 
   if (empty($tokens)) {
-    watchdog('push_notifications', 'Apple\'s feedback service returned no tokens to be removed.');
+    watchdog('push_notifications', "Apple's feedback service returned no tokens to be removed.");
     return;
   }
 
