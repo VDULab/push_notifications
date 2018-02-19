@@ -708,7 +708,7 @@ function push_notifications_apns_send_message($tokens, $payload) {
     }
     elseif ($success == 0 || $success == FALSE || $success < strlen($apns_message)) {
       watchdog('push_notifications', 'APNS message could not be sent.<br />Token: @token<br />fwrite() returned: @success', array(
-        '@toekn' => $token,
+        '@token' => $token,
         '@success' => $success,
       ));
     }
