@@ -694,10 +694,10 @@ function push_notifications_apns_send_message($tokens, $payload) {
     $apns_message = chr(0) . chr(0) . chr(32) . pack('H*', $token) . pack('n', strlen($payload_apns)) . $payload_apns;
     // Write the payload to the currently active streaming connection.
     $success = fwrite($apns, $apns_message);
-    if ($success) {
+    if ($success == strlen($apns_message)) {
       $result['count_success']++;
     }
-    elseif ($success == 0 || $success == FALSE || $success < strlen($apns_message)) {
+    else {
       $error_message = array(
         'message' => t('APNS message could not be sent.'),
         'token' => 'Token: ' . $token,
