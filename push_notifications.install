@@ -41,8 +41,8 @@ function push_notifications_uninstall() {
   variable_del('push_notifications_gcm_project_id');
   variable_del('push_notifications_gcm_api_key');
   variable_del('push_notifications_gcm_server_post_url');
-  variable_del('push_notifications_fcm_cloud_messaging_token');
   variable_del('push_notifications_fcm_server_key');
+  variable_del('push_notifications_fcm_legacy_server_key');
   variable_del('push_notifications_fcm_server_post_url');
   variable_del('push_notifications_privatemsg_integration');
   variable_del('push_notifications_require_enabled_language');
@@ -238,4 +238,30 @@ function push_notifications_update_7005() {
     'not null' => TRUE,
   );
   db_change_field($table, $field, $field, $field_new);
+}
+
+/**
+ * Rename FCM variables to match Google's verbiage.
+ */
+function push_notifications_update_7006() {
+
+  // Grab a copy of the current Firebase Cloud Messaging token, if any.
+  $fcm_cloud_messaging_token = variable_get('push_notifications_fcm_cloud_messaging_token', '');
+
+  // Grab a copy of the current server key, if any.
+  $fcm_server_key = variable_get('push_notifications_fcm_server_key', '');
+
+  // If there was an FCM token, make that the new server key.
+  if ($fcm_cloud_messaging_token != '') {
+    variable_set('push_notifications_fcm_server_key', $fcm_cloud_messaging_token);
+  }
+
+  // If there was a server key, make that the legacy server key.
+  if ($fcm_server_key != '') {
+    variable_set('push_notifications_fcm_legacy_server_key', $fcm_server_key);
+  }
+
+  // Finally delete the deprecated FCM token variable.
+  variable_del('push_notifications_fcm_cloud_messaging_token');
+
 }
