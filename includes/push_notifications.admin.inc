@@ -128,7 +128,7 @@ function push_notifications_admin_form($form, $form_state) {
   $form['configuration_general']['push_notifications_privatemsg_integration'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable integration with Privatemsg module'),
-    '#description' => t('Check this to deliver messages sent through the <a href="https://drupal.org/project/privatemsg" target="_blank">Privatemsg</a> module to all recipients with at least one valid device token. Requires !privatemsg module 7.x-1.x (status: !privatemsg_status)', array(
+    '#description' => t('Check this to deliver messages sent through the <a href="https://drupal.org/project/privatemsg" target="_blank">Privatemsg</a> module to all recipients with at least one valid device token. Requires the <a href="https://drupal.org/project/privatemsg" target="_blank">Privatemsg</a> module version 7.x-1.x (status: !privatemsg_status)', array(
       '!privatemsg_status' => (module_exists('privatemsg')) ? t('successfully installed') : t('not installed'),
     )),
     '#default_value' => variable_get('push_notifications_privatemsg_integration', 0),
