@@ -409,8 +409,12 @@ function push_notifications_store_token($token = '', $type_id = '', $uid = '', $
 
 
 /**
- * Open an APNS connection.
+ * Opens an APNs connection.
+ *
  * Should be closed by calling fclose($connection) after usage.
+ *
+ * @return
+ *   On success a stream resource, FALSE otherwise.
  */
 function push_notifications_open_apns() {
   // Determine the absolute path of the certificate.
@@ -435,11 +439,8 @@ function push_notifications_open_apns() {
   $apns = stream_socket_client('ssl://' . PUSH_NOTIFICATIONS_APNS_HOST . ':' . PUSH_NOTIFICATIONS_APNS_PORT, $error, $error_string, 2, STREAM_CLIENT_CONNECT, $stream_context);
   if (!$apns) {
     watchdog('push_notifications', 'Connection to Apple Notification Server failed.', array(), WATCHDOG_ERROR);
-    return FALSE;
   }
-  else {
-    return $apns;
-  }
+  return $apns;
 }
 
 
