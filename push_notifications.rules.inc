@@ -139,20 +139,6 @@ function push_notifications_rules_event_info(){
     ),
   );
 
-  $events['push_notifications_after_c2dm_send'] = array (
-    'label' => t('After sending an Android push notification (C2DM)'),
-    'group' => t('Push Notifications'),
-    'module' => 'push_notifications',
-    'variables' => array(
-      'type_id' => array('type' => 'integer', 'label' => t('type of device: 0 iOS, 1 Android')),
-      'payload' => array('type' => 'payload', 'text' => t('Payload sent')),
-      'count_attempted' => array('type' => 'integer', 'label' => t('Attempted to send')),
-      'count_success' => array('type' => 'integer', 'label' => t('Successfully sent')),
-      'success' => array('type' => 'integer', 'label' => t('Result of the sent')),
-      'result_message' => array('type' => 'text', 'label' => t('Prepared result message')),
-    ),
-  );
-
   $events['push_notifications_after_gcm_send'] = array (
     'label' => t('After sending an Android push notification (GCM)'),
     'group' => t('Push Notifications'),
