@@ -44,22 +44,11 @@ define('PUSH_NOTIFICATIONS_APNS_STREAM_CONTEXT_LIMIT', variable_get('push_notifi
 // Google Variables
 //
 // Google Push Notification Types
-// 0 => Cloud 2 Device Messaging
 // 1 => Google Cloud Messaging
-define('PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM', 0);
+// 2 => Firebase Cloud Messaging
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM', 1);
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM', 2);
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE', variable_get('push_notifications_google_type', PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM));
-
-//
-// C2DM Variables
-//
-// C2DM Credentials.
-define('PUSH_NOTIFICATIONS_C2DM_USERNAME', variable_get('push_notifications_c2dm_username', ''));
-define('PUSH_NOTIFICATIONS_C2DM_PASSWORD', variable_get('push_notifications_c2dm_password', ''));
-define('PUSH_NOTIFICATIONS_C2DM_CLIENT_LOGIN_ACTION_URL', variable_get('push_notifications_c2dm_client_login_action_url', 'https://www.google.com/accounts/ClientLogin'));
-// C2DM Server Post URL
-define('PUSH_NOTIFICATIONS_C2DM_SERVER_POST_URL', variable_get('push_notifications_c2dm_server_post_url', 'https://android.apis.google.com/c2dm/send'));
 
 //
 // GCM Variables
@@ -610,17 +599,9 @@ function push_notifications_send_alert($tokens = array(), $payload = array()) {
   }
 
   // Send payload to Android recipients if configured correctly.
-  if (!empty($tokens_android) && (
-      (PUSH_NOTIFICATIONS_C2DM_USERNAME && PUSH_NOTIFICATIONS_C2DM_PASSWORD) ||
-      PUSH_NOTIFICATIONS_GCM_API_KEY ||
-      PUSH_NOTIFICATIONS_FCM_SERVER_KEY
-    )) {
+  if (!empty($tokens_android) && (PUSH_NOTIFICATIONS_GCM_API_KEY || PUSH_NOTIFICATIONS_FCM_SERVER_KEY)) {
     // Determine which method to use for Google push notifications.
     switch (PUSH_NOTIFICATIONS_GOOGLE_TYPE) {
-      case PUSH_NOTIFICATIONS_GOOGLE_TYPE_C2DM:
-        push_notifications_c2dm_send_message($tokens_android, $payload);
-        break;
-
       case PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM:
         push_notifications_gcm_send_message($tokens_android, $payload);
         break;
@@ -752,156 +733,6 @@ function push_notifications_apns_send_message($tokens, $payload) {
   return $result;
 }
 
-
-/**
- * Determine the auth string from C2DM server.
- */
-function push_notifications_c2dm_token() {
-  $data = array(
-    'Email'         => PUSH_NOTIFICATIONS_C2DM_USERNAME,
-    'Passwd'        => PUSH_NOTIFICATIONS_C2DM_PASSWORD,
-    'accountType'   => 'HOSTED_OR_GOOGLE',
-    'source'        => 'Company-AppName-Version',
-    'service'       => 'ac2dm',
-  );
-
-  $curl = curl_init();
-  curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_C2DM_CLIENT_LOGIN_ACTION_URL);
-  curl_setopt($curl, CURLOPT_FOLLOWLOCATION, TRUE);
-  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-  curl_setopt($curl, CURLOPT_POST, TRUE);
-  curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-  curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-  $response = curl_exec($curl);
-  curl_close($curl);
-
-  // Get the auth token.
-  preg_match("/Auth=([a-z0-9_\-]+)/i", $response, $matches);
-  $auth_token = $matches[1];
-
-  if (!$auth_token) {
-    watchdog('push_notifications', 'Google C2DM Server did not provide an authentication token.', array(), WATCHDOG_ERROR);
-  }
-  else {
-    return $auth_token;
-  }
-}
-
-
-
-
-/**
- * Send out push notifications through C2DM.
- *
- * @param $tokens
- *   Array of iOS tokens
- * @param $payload
- *   Payload to send.
- *
- * @return
- *   Array with the following keys:
- *   - count_attempted (# of attempted messages sent)
- *   - count_success   (# of successful sends)
- *   - success         (# boolean)
- *   - message         (Prepared result message)
- */
-function push_notifications_c2dm_send_message($tokens, $payload) {
-  if (!is_array($tokens) || empty($payload) || (is_array($tokens) && empty($tokens))) {
-    return FALSE;
-  }
-
-  // Determine an updated authentication token.
-  // Google is very vague about how often this token changes,
-  // so we'll just get a new token every time.
-  $auth_token = push_notifications_c2dm_token();
-  if (!$auth_token) {
-    $result['message'] = t('Google C2DM Server did not provide an authentication token. Check your C2DM credentials.');
-    return $result;
-  }
-
-  // Define an array of result values.
-  $result = array(
-    'count_attempted' => 0,
-    'count_success' => 0,
-    'success' => 0,
-    'message' => '',
-  );
-
-  // Define the header.
-  $headers = array();
-  $headers[] = 'Authorization: GoogleLogin auth=' . $auth_token;
-
-  // Send a push notification to every recipient.
-  foreach ($tokens as $token) {
-    $result['count_attempted']++;
-
-    // Convert the payload into the correct format for C2DM payloads.
-    // Prefill an array with values from other modules first.
-    $data = array();
-    foreach ($payload as $key => $value) {
-      if ($key != 'alert') {
-        $data['data.' . $key] = $value;
-      }
-    }
-    // Fill the default values required for each payload.
-    $data['registration_id'] = $token;
-    $data['collapse_key'] = time();
-    $data['data.message'] = $payload['alert'];
-
-    $curl = curl_init();
-    curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_C2DM_SERVER_POST_URL);
-    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-    curl_setopt($curl, CURLOPT_POST, TRUE);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-    $response = curl_exec($curl);
-    $info = curl_getinfo($curl);
-    curl_close($curl);
-
-    // If Google's server returns a reply, but that reply includes an error, log the error message.
-    if ($info['http_code'] == 200 && (isset($response) && preg_match('/Error/', $response))) {
-      watchdog('push_notifications', "Google's Server returned an error: @response", array(
-        '@response' => $response,
-      ), WATCHDOG_ERROR);
-
-      // If the device token is invalid or not registered (anymore because the user
-      // has uninstalled the application), remove this device token.
-      if (preg_match('/InvalidRegistration/', $response) || preg_match('/NotRegistered/', $response)) {
-        push_notifications_purge_token($token, PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
-        watchdog('push_notifications', 'C2DM token not valid anymore. Removing token @token', array(
-          '@token' => $token,
-        ));
-      }
-    }
-
-    // Success if the http response status is 200 and the response
-    // data does not containt the word "Error".
-    if ($info['http_code'] == 200 && (isset($response) && !preg_match('/Error/', $response))) {
-      $result['count_success']++;
-    }
-  }
-
-  $result['message'] = t('Successfully sent !count_success Android push messages (attempted to send !count messages).', array('!count_success' => $result['count_success'], '!count' => $result['count_attempted']));
-  $result['success'] = TRUE;
-
-  // Invoke rules.
-  if (module_exists('rules')) {
-    rules_invoke_event_by_args('push_notifications_after_c2dm_send', array(
-        'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
-        'payload' => $payload,
-        'count_attempted' => $result['count_attempted'],
-        'count_success' => $result['count_success'],
-        'success' => $result['success'],
-        'result_message' => $result['message'],
-      )
-    );
-  }
-
-
-  return $result;
-}
-
 /**
  * Send out push notifications through GCM.
  *
@@ -947,7 +778,7 @@ function push_notifications_gcm_send_message($tokens, $payload) {
     // Create a token bundle.
     $bundle_tokens = array_slice($tokens, $i * 1000, 1000, FALSE);
 
-    // Convert the payload into the correct format for C2DM payloads.
+    // Convert the payload into the correct format for GCM payloads.
     // Prefill an array with values from other modules first.
     $data = array();
     foreach ($payload as $key => $value) {
@@ -1067,7 +898,7 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     // Create a token bundle.
     $bundle_tokens = array_slice($tokens, $i * 1000, 1000, FALSE);
 
-    // Convert the payload into the correct format for C2DM payloads.
+    // Convert the payload into the correct format for FCM payloads.
     // Prefill an array with values from other modules first.
     $data = array();
     foreach ($payload as $key => $value) {
