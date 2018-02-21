@@ -327,6 +327,7 @@ function push_notifications_admin_form_submit($form, &$form_state) {
       variable_set('push_notifications_apns_environment', $apns_environment);
       // Set the individual variables.
       variable_set('push_notifications_apns_host', 'gateway.sandbox.push.apple.com');
+      variable_set('push_notifications_apns_feedback_host', 'feedback.sandbox.push.apple.com');
       variable_set('push_notifications_apns_certificate', 'apns-development' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem');
       break;
     case 1:
@@ -334,6 +335,7 @@ function push_notifications_admin_form_submit($form, &$form_state) {
       variable_set('push_notifications_apns_environment', $apns_environment);
       // Set the individual variables.
       variable_set('push_notifications_apns_host', 'gateway.push.apple.com');
+      variable_set('push_notifications_apns_feedback_host', 'feedback.push.apple.com');
       variable_set('push_notifications_apns_certificate', 'apns-production' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem');
       break;
   }
