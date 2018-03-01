@@ -956,7 +956,7 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
           if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
             push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
             watchdog('push_notifications', 'FCM token not valid anymore. Removing token @token', array(
-              '@response' => $bundle_tokens[$token_index],
+              '@token' => $bundle_tokens[$token_index],
             ));
           }
         }
