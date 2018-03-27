@@ -8,13 +8,16 @@
 /**
  * Service callback to store a device token.
  *
- * @param $data
+ * @param array $data
  *   Array with the following keys:
- *   - token
- *   - type
+ *   - token: The token to store.
+ *   - type: "iso" or "android".
  *
- * @return
- *   Service data
+ * @return array|ServicesException
+ *   On success an array containing:
+ *   - success: 1
+ *   - message: A message indicating if the token was inserted or already
+ *     existed.
  */
 function _push_notifications_service_create_device_token($data) {
   if (!isset($data['token']) || !isset($data['type'])) {
@@ -64,7 +67,7 @@ function _push_notifications_service_create_device_token($data) {
   if (push_notifications_find_token($token, $uid)) {
     return array(
       'success' => 1,
-      'message' => 'This token is already registered to this user.'
+      'message' => t('This token is already registered to this user.'),
     );
   }
 
@@ -77,17 +80,21 @@ function _push_notifications_service_create_device_token($data) {
   else {
     return array(
       'success' => 1,
-      'message' => 'This token was successfully stored in the database.'
+      'message' => t('This token was successfully stored in the database.'),
     );
   }
 }
 
 /**
- * Deletes an already registered token.
+ * Deletes an already-registered token.
  *
- * @param $data
+ * @param string $token
+ *   The token to delete.
  *
- * @return array|mixed
+ * @return array|ServicesError
+ *   On success an array containing:
+ *   - success: 1
+ *   - message: A success message.
  */
 function _push_notifications_service_delete_device_token($token) {
   if (empty($token)) {
@@ -96,6 +103,6 @@ function _push_notifications_service_delete_device_token($token) {
   push_notifications_purge_token($token);
   return array(
     'success' => 1,
-    'message' => 'The token was successfully removed from the database.'
+    'message' => 'The token was successfully removed from the database.',
   );
 }

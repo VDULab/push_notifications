@@ -1,11 +1,17 @@
 <?php
 
 /**
+ * @file
+ * Views filter handler for token types.
+ */
+
+/**
  * Provides type filter options for the token type.
  */
 class push_notifications_views_handler_filter_push_notifications_type extends views_handler_filter_in_operator {
+
   /**
-   * Compute type filter options.
+   * Sets type filter options.
    */
   public function get_value_options() {
     if (!isset($this->value_options)) {
@@ -16,4 +22,5 @@ class push_notifications_views_handler_filter_push_notifications_type extends vi
       $this->value_options = $options;
     }
   }
+
 }

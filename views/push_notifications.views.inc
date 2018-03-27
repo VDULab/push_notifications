@@ -1,8 +1,13 @@
 <?php
 
 /**
-* Expose Push Notifications data to views.
-*/
+ * @file
+ * Views integration for Push Notifications.
+ */
+
+/**
+ * Implements hook_views_data().
+ */
 function push_notifications_views_data() {
   // The 'group' index will be used as a prefix in the UI for any of this
   // table's fields, sort criteria, etc. so it's easy to tell where they came
@@ -21,11 +26,11 @@ function push_notifications_views_data() {
     'weight' => -10,
   );
 
-  //Add relation with users
+  // Add relation with users.
   $data['push_notifications_tokens']['table']['join'] = array(
-	  'users' => array(
-	    'handler' => 'views_join',
-	    'left_table' => 'users',
+    'users' => array(
+      'handler' => 'views_join',
+      'left_table' => 'users',
       'left_field' => 'uid',
       'field' => 'uid',
     ),
@@ -130,24 +135,4 @@ function push_notifications_views_data() {
   }
 
   return $data;
-}
-
-
-/**
- * Implements hook_views_handlers().
- */
-function push_notifications_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'push_notifications') . '/views',
-    ),
-    'handlers' => array(
-      'push_notifications_views_handler_filter_push_notifications_type' => array(
-        'parent' => 'views_handler_filter_in_operator',
-      ),
-      'push_notifications_views_handler_field_push_notifications_type' => array(
-        'parent' => 'views_handler_field',
-      ),
-    ),
-  );
 }

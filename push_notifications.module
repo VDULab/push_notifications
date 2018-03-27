@@ -14,63 +14,116 @@
 define('PUSH_NOTIFICATIONS_TYPE_ID_IOS', variable_get('push_notifications_type_id_ios', 0));
 define('PUSH_NOTIFICATIONS_TYPE_ID_ANDROID', variable_get('push_notifications_type_id_anroid', 1));
 
-//
-// Apple Variables
-//
-// Apple Server
+/**
+ * @defgroup apple_variables Apple Variables
+ * @{
+ */
+
+/**
+ * Apple Server.
+ */
 define('PUSH_NOTIFICATIONS_APNS_HOST', variable_get('push_notifications_apns_host', 'gateway.push.apple.com'));
-// Apple Server port.
+/**
+ * Apple Server port.
+ */
 define('PUSH_NOTIFICATIONS_APNS_PORT', 2195);
-// Apple Feedback Server, initially set to development server.
+/**
+ * Apple Feedback Server, initially set to development server.
+ */
 define('PUSH_NOTIFICATIONS_APNS_FEEDBACK_HOST', variable_get('push_notifications_apns_feedback_host', 'feedback.push.apple.com'));
-// Apple Feedback Server port.
+/**
+ * Apple Feedback Server port.
+ */
 define('PUSH_NOTIFICATIONS_APNS_FEEDBACK_PORT', 2196);
-// Random suffix for certificate string.
+/**
+ * Random suffix for certificate string.
+ */
 define('PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM', variable_get('push_notifications_apns_certificate_random', ''));
-// Name of certificate, initially set to development certificate.
+/**
+ * Name of certificate, initially set to development certificate.
+ */
 define('PUSH_NOTIFICATIONS_APNS_CERTIFICATE', variable_get('push_notifications_apns_certificate', 'apns-production' . PUSH_NOTIFICATIONS_APNS_CERTIFICATE_RANDOM . '.pem'));
-// Size limit for individual payload, in bytes.
+/**
+ * Size limit for individual payload, in bytes.
+ */
 define('PUSH_NOTIFICATIONS_APNS_PAYLOAD_SIZE_LIMIT', 2048);
-// Payload sound
+/**
+ * Payload sound.
+ */
 define('PUSH_NOTIFICATIONS_APNS_NOTIFICATION_SOUND', variable_get('push_notifications_apns_notification_sound', 'default'));
-// Boolean value to indicate wether Apple's feedback service should be called
-// on cron to remove unused tokens from our database.
+/**
+ * Boolean to indicate wether Apple's feedback service should be called on cron.
+ *
+ * Apple's feedback services is used to remove unused tokens from our database.
+ */
 define('PUSH_NOTIFICATIONS_APNS_QUERY_FEEDBACK_SERVICE', variable_get('push_notifications_apns_query_feedback_service', 1));
-// Maximum of messages to send per stream context.
+/**
+ * Maximum of messages to send per stream context.
+ */
 define('PUSH_NOTIFICATIONS_APNS_STREAM_CONTEXT_LIMIT', variable_get('push_notifications_apns_stream_context_limit', 1));
 
+/**
+ * @} End group "apple_variables".
+ */
 
-//
-// Google Variables
-//
-// Google Push Notification Types
-// 1 => Google Cloud Messaging
-// 2 => Firebase Cloud Messaging
+/**
+ * @defgroup google_variables Google Variables.
+ * @{
+ *
+ * Google Push Notification Types
+ *  1 => Google Cloud Messaging.
+ *  2 => Firebase Cloud Messaging.
+ */
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM', 1);
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM', 2);
 define('PUSH_NOTIFICATIONS_GOOGLE_TYPE', variable_get('push_notifications_google_type', PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM));
 
-//
-// GCM Variables
-//
-// GCM API KEY Credentials.
-define('PUSH_NOTIFICATIONS_GCM_API_KEY', variable_get('push_notifications_gcm_api_key', ''));
-// GCM Server Post URL
-define('PUSH_NOTIFICATIONS_GCM_SERVER_POST_URL', variable_get('push_notifications_gcm_server_post_url', 'https://android.googleapis.com/gcm/send'));
-
-//
-// FCM Variables
-//
-// FCM Cloud Messaging TokenSender ID
-define('PUSH_NOTIFICATIONS_FCM_SERVER_KEY', variable_get('push_notifications_fcm_server_key', ''));
-// FCM Cloud Messaging Server Key
-define('PUSH_NOTIFICATIONS_FCM_LEGACY_SERVER_KEY', variable_get('push_notifications_fcm_legacy_server_key', ''));
-// FCM Server Post URL
-define('PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL', variable_get('push_notifications_fcm_server_post_url', 'https://fcm.googleapis.com/fcm/send'));
-
+/**
+ * @} End group "google_variables".
+ */
 
 /**
- * Implements of hook_menu().
+ * @defgroup gcm_variables GCM Variables
+ * @{
+ */
+
+/**
+ * GCM API KEY Credentials.
+ */
+define('PUSH_NOTIFICATIONS_GCM_API_KEY', variable_get('push_notifications_gcm_api_key', ''));
+/**
+ * GCM Server Post URL.
+ */
+define('PUSH_NOTIFICATIONS_GCM_SERVER_POST_URL', variable_get('push_notifications_gcm_server_post_url', 'https://android.googleapis.com/gcm/send'));
+
+/**
+ * @} End of "gcm_variables".
+ */
+
+/**
+ * @defgroup fcm_variables FCM Variables
+ * @{
+ */
+
+/**
+ * FCM Cloud Messaging TokenSender ID.
+ */
+define('PUSH_NOTIFICATIONS_FCM_SERVER_KEY', variable_get('push_notifications_fcm_server_key', ''));
+/**
+ * FCM Cloud Messaging Server Key.
+ */
+define('PUSH_NOTIFICATIONS_FCM_LEGACY_SERVER_KEY', variable_get('push_notifications_fcm_legacy_server_key', ''));
+/**
+ * FCM Server Post URL.
+ */
+define('PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL', variable_get('push_notifications_fcm_server_post_url', 'https://fcm.googleapis.com/fcm/send'));
+
+/**
+ * @} End of "fcm_variables".
+ */
+
+/**
+ * Implements hook_menu().
  */
 function push_notifications_menu() {
   $items = array();
@@ -123,18 +176,14 @@ function push_notifications_menu() {
   return $items;
 }
 
-
-
 /**
- * Implements of hook_cron().
+ * Implements hook_cron().
  */
 function push_notifications_cron() {
   if (PUSH_NOTIFICATIONS_APNS_QUERY_FEEDBACK_SERVICE) {
     push_notifications_apns_feedback_service();
   }
 }
-
-
 
 /**
  * Implements hook_permission().
@@ -160,8 +209,6 @@ function push_notifications_permission() {
   );
 }
 
-
-
 /**
  * Implements hook_services_resources().
  */
@@ -174,7 +221,7 @@ function push_notifications_services_resources() {
         'file' => array(
           'type' => 'inc',
           'module' => 'push_notifications',
-          'name' => 'includes/push_notifications.service'
+          'name' => 'includes/push_notifications.service',
         ),
         'access arguments' => array('register device token'),
         'access arguments append' => FALSE,
@@ -208,7 +255,7 @@ function push_notifications_services_resources() {
         'file' => array(
           'type' => 'inc',
           'module' => 'push_notifications',
-          'name' => 'includes/push_notifications.service'
+          'name' => 'includes/push_notifications.service',
         ),
         'access arguments' => array('remove device token'),
         'access arguments append' => FALSE,
@@ -226,10 +273,8 @@ function push_notifications_services_resources() {
   );
 }
 
-
-
 /**
- * Implements of hook_views_api().
+ * Implements hook_views_api().
  */
 function push_notifications_views_api() {
   return array(
@@ -238,10 +283,8 @@ function push_notifications_views_api() {
   );
 }
 
-
-
 /**
- * Implements hook_privatemsg_message_insert.
+ * Implements hook_privatemsg_message_insert().
  */
 function push_notifications_privatemsg_message_insert($message) {
   if (variable_get('push_notifications_privatemsg_integration', 0)) {
@@ -279,23 +322,21 @@ function push_notifications_privatemsg_message_insert($message) {
   }
 }
 
-
-
 /**
- * Determine if this user has already stored a token
- * in the database. The same device token can be
- * registered for multiple users, because multiple
+ * Determines if this user has already stored a token in the database.
+ *
+ * The same device token can be registered for multiple users, because multiple
  * users can login from the same device.
  *
- * @param $token
+ * @param string $token
  *   Device Token.
- * @param $uid
+ * @param int $uid
  *   User ID.
- * @param $exclude
- *   Set this to true to find (at least one) other user(s) who have this
- *   token stored. Optional, defaults to false.
+ * @param bool $exclude
+ *   Set this to TRUE to find (at least one) other user(s) who have this
+ *   token stored. Optional, defaults to FALSE.
  *
- * @return
+ * @return int|false
  *   User ID of token, if found.
  */
 function push_notifications_find_token($token = '', $uid = '', $exclude = FALSE) {
@@ -318,27 +359,26 @@ function push_notifications_find_token($token = '', $uid = '', $exclude = FALSE)
   return $result->fetchField();
 }
 
-
-
 /**
- * Store a token in the database.
+ * Stores a token in the database.
+ *
  * Removes all spaces in the token.
  *
- * @param $token
+ * @param string $token
  *   Device token.
- * @param $type_id
+ * @param string $type_id
  *   Device type id.
- * @param $uid
+ * @param int $uid
  *   User ID.
- * @param $language
- *   Language that this token is registered for, optional.
+ * @param string $language
+ *   (optional) Language that this token is registered for.
  *
- * @return
+ * @return int|false
  *   Failure to write a record will return FALSE, Otherwise SAVED_NEW.
  */
 function push_notifications_store_token($token = '', $type_id = '', $uid = '', $language = '') {
-   // Let modules modify the token before it is saved to the database.
-  foreach(module_implements('push_notifications_store_token') as $module) {
+  // Let modules modify the token before it is saved to the database.
+  foreach (module_implements('push_notifications_store_token') as $module) {
     $function = $module . '_push_notifications_store_token';
     $function($token, $type_id, $uid);
   }
@@ -346,12 +386,11 @@ function push_notifications_store_token($token = '', $type_id = '', $uid = '', $
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_before_token_insert', array(
-        'token' => $token,
-        'type_id' => $type_id,
-        'uid' => $uid,
-        'language' => $language,
-      )
-    );
+      'token' => $token,
+      'type_id' => $type_id,
+      'uid' => $uid,
+      'language' => $language,
+    ));
   }
 
   if (!is_string($token) || !is_numeric($type_id) || !is_numeric($uid)) {
@@ -375,7 +414,7 @@ function push_notifications_store_token($token = '', $type_id = '', $uid = '', $
   $result = drupal_write_record($table, $record);
 
   // Allow modules to react to the newly created record after creation.
-  foreach(module_implements('push_notifications_post_store_token') as $module) {
+  foreach (module_implements('push_notifications_post_store_token') as $module) {
     $function = $module . '_push_notifications_post_store_token';
     $function($record);
   }
@@ -383,26 +422,23 @@ function push_notifications_store_token($token = '', $type_id = '', $uid = '', $
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_token_insert', array(
-        'token' => $token,
-        'type_id' => $type_id,
-        'uid' => $uid,
-        'language' => $language,
-        'result' => $result,
-      )
-    );
+      'token' => $token,
+      'type_id' => $type_id,
+      'uid' => $uid,
+      'language' => $language,
+      'result' => $result,
+    ));
   }
 
   return $result;
 }
-
-
 
 /**
  * Opens an APNs connection.
  *
  * Should be closed by calling fclose($connection) after usage.
  *
- * @return
+ * @return mixed
  *   On success a stream resource, FALSE otherwise.
  */
 function push_notifications_open_apns() {
@@ -432,23 +468,18 @@ function push_notifications_open_apns() {
   return $apns;
 }
 
-
-
 /**
- * Check size of a push notification payload.
+ * Checks the size of a push notification payload.
+ *
  * Payload can't exceed PUSH_NOTIFICATIONS_APNS_PAYLOAD_SIZE_LIMIT.
  *
- * @param $payload
+ * @param array $payload
  *   Message.
  *
- * @return
- *   Returns true if message is below the limit, false otherwise.
+ * @return bool
+ *   Returns TRUE if message is below the limit, FALSE otherwise.
  */
-function push_notifications_check_payload_size($payload = '') {
-  if ($payload == '') {
-    return FALSE;
-  }
-
+function push_notifications_check_payload_size($payload) {
   // JSON-encode the payload.
   $payload = json_encode($payload);
 
@@ -486,7 +517,7 @@ function push_notifications_send_message($recipients, $message) {
   }
 
   // Let modules modify the message before it is sent.
-  foreach(module_implements('push_notifications_send_message') as $module) {
+  foreach (module_implements('push_notifications_send_message') as $module) {
     $function = $module . '_push_notifications_send_message';
     $function($message, $type = 'simple');
   }
@@ -513,7 +544,7 @@ function push_notifications_send_message($recipients, $message) {
 }
 
 /**
- * Send a simple message alert to a single account.
+ * Sends a simple message alert to a single account.
  *
  * @param object $account
  *   Can be either a full user object or a $uid.
@@ -526,29 +557,30 @@ function push_notifications_send_message_account($account, $message) {
 }
 
 /**
- * Send a simple message alert to all tokens in the database.
+ * Sends a simple message alert to all tokens in the database.
  *
- * @param string $message Message to be included in payload.
- * @param string $target_group Defines the target group for this message.
- *   Valid options are:
- *   - any
- *   - authenticated
- *   - anonymous
- * @return mixed Flag indicating if message delivery was successful.
+ * @param string $message
+ *   Message to be included in payload.
+ * @param string $target_group
+ *   Defines the target group for this message. Valid options are "any",
+ *   "authenticated", and "anonymous".
+ *
+ * @return mixed
+ *   Flag indicating if message delivery was successful.
  */
 function push_notifications_send_message_bulk($message = '', $target_group = '') {
   if (empty($message)) {
     watchdog('push_notifications', 'Message cannot be empty');
-    return false;
+    return FALSE;
   }
 
   // Get all tokens in the system.
   $tokens = push_notifications_get_tokens(array(
     'account_type' => $target_group,
-  ), true);
+  ), TRUE);
 
   // Let modules modify the message before it is sent.
-  foreach(module_implements('push_notifications_send_message') as $module) {
+  foreach (module_implements('push_notifications_send_message') as $module) {
     $function = $module . '_push_notifications_send_message';
     $function($message, $type = 'bulk');
   }
@@ -569,11 +601,12 @@ function push_notifications_send_message_bulk($message = '', $target_group = '')
 }
 
 /**
- * Handle delivery of simple alert message.
+ * Handles delivery of simple alert message.
  *
- * @param array $tokens Array of token record objects.
- * @param array $payload Payload.
- *
+ * @param array $tokens
+ *   Array of token record objects.
+ * @param array $payload
+ *   Payload.
  */
 function push_notifications_send_alert($tokens = array(), $payload = array()) {
   // Group tokens into types.
@@ -613,28 +646,28 @@ function push_notifications_send_alert($tokens = array(), $payload = array()) {
   }
 }
 
-
-
 /**
- * Send out push notifications through APNS.
+ * Sends out push notifications through APNS.
  *
- * @param $tokens
- *   Array of iOS tokens
- * @param $payload
+ * @param array $tokens
+ *   Array of iOS tokens.
+ * @param array $payload
  *   Payload to send. Minimum requirement
  *   is a nested array in this format:
+ *   @code
  *   $payload = array(
  *     'aps' => array(
  *       'alert' => 'Push Notification Test',
  *     );
  *   );
+ *   @endcode
  *
- * @return
- *   Array with the following keys:
- *   - count_attempted (# of attempted messages sent)
- *   - count_success   (# of successful sends)
- *   - success         (# boolean)
- *   - message         (Prepared result message)
+ * @return array
+ *   Associatvie array with the following keys:
+ *   - count_attempted: Number of attempted messages sent.
+ *   - count_success: Number of messages successfully sent.
+ *   - success: Boolean.
+ *   - message: Prepared result message.
  */
 function push_notifications_apns_send_message($tokens, $payload) {
   if (!is_array($tokens) || empty($payload) || (is_array($tokens) && empty($tokens))) {
@@ -720,35 +753,34 @@ function push_notifications_apns_send_message($tokens, $payload) {
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_apns_send', array(
-        'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_IOS,
-        'payload' => $payload,
-        'count_attempted' => $result['count_attempted'],
-        'count_success' => $result['count_success'],
-        'success' => $result['success'],
-        'result_message' => $result['message'],
-      )
-    );
+      'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_IOS,
+      'payload' => $payload,
+      'count_attempted' => $result['count_attempted'],
+      'count_success' => $result['count_success'],
+      'success' => $result['success'],
+      'result_message' => $result['message'],
+    ));
   }
 
   return $result;
 }
 
 /**
- * Send out push notifications through GCM.
+ * Sends out push notifications through GCM.
  *
- * @link http://developer.android.com/guide/google/gcm/index.html
- *
- * @param $tokens
- *   Array of gcm tokens
- * @param $payload
+ * @param array $tokens
+ *   Array of gcm tokens.
+ * @param array $payload
  *   Payload to send.
  *
- * @return
- *   Array with the following keys:
- *   - count_attempted (# of attempted messages sent)
- *   - count_success   (# of successful sends)
- *   - success         (# boolean)
- *   - message         (Prepared result message)
+ * @return array
+ *   Associative array with the following keys:
+ *   - count_attempted: Number of attempted messages sent.
+ *   - count_success: Number of messages successfully sent.
+ *   - success: Boolean.
+ *   - message: Prepared result message.
+ *
+ * @see http://developer.android.com/guide/google/gcm/index.html
  */
 function push_notifications_gcm_send_message($tokens, $payload) {
   if (!is_array($tokens) || empty($payload) || (is_array($tokens) && empty($tokens))) {
@@ -767,7 +799,6 @@ function push_notifications_gcm_send_message($tokens, $payload) {
   $headers = array();
   $headers[] = 'Content-Type:application/json';
   $headers[] = 'Authorization:key=' . PUSH_NOTIFICATIONS_GCM_API_KEY;
-
 
   // Check of many token bundles can be build.
   $token_bundles = ceil(count($tokens) / 1000);
@@ -817,8 +848,9 @@ function push_notifications_gcm_send_message($tokens, $payload) {
       // Analyze the failure.
       foreach ($response->results as $token_index => $message_result) {
         if (!empty($message_result->error)) {
-          // If the device token is invalid or not registered (anymore because the user
-          // has uninstalled the application), remove this device token.
+          // If the device token is invalid or not registered (anymore because
+          // the user has uninstalled the application), remove this device
+          // token.
           if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
             push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
             watchdog('push_notifications', 'GCM token not valid anymore. Removing token @token', array(
@@ -841,35 +873,34 @@ function push_notifications_gcm_send_message($tokens, $payload) {
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_gcm_send', array(
-        'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
-        'payload' => $payload,
-        'count_attempted' => $result['count_attempted'],
-        'count_success' => $result['count_success'],
-        'success' => $result['success'],
-        'result_message' => $result['message'],
-      )
-    );
+      'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
+      'payload' => $payload,
+      'count_attempted' => $result['count_attempted'],
+      'count_success' => $result['count_success'],
+      'success' => $result['success'],
+      'result_message' => $result['message'],
+    ));
   }
 
   return $result;
 }
 
 /**
- * Send out push notifications through FCM.
+ * Sends out push notifications through FCM.
  *
- * @link https://firebase.google.com/docs/cloud-messaging/
- *
- * @param $tokens
- *   Array of fcm tokens
- * @param $payload
+ * @param array $tokens
+ *   Array of fcm tokens.
+ * @param array $payload
  *   Payload to send.
  *
- * @return
- *   Array with the following keys:
- *   - count_attempted (# of attempted messages sent)
- *   - count_success   (# of successful sends)
- *   - success         (# boolean)
- *   - message         (Prepared result message)
+ * @return array
+ *   Associative array with the following keys:
+ *   - count_attempted: Number of attempted messages sent.
+ *   - count_success: Number of messages successfully sent.
+ *   - success: Boolean.
+ *   - message: Prepared result message.
+ *
+ * @see https://firebase.google.com/docs/cloud-messaging/
  */
 function push_notifications_fcm_send_message($tokens, $payload, $options = array()) {
   if (!is_array($tokens) || empty($payload) || (is_array($tokens) && empty($tokens))) {
@@ -931,8 +962,8 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
       $response = json_decode($response_raw);
     }
 
-    // If Google's server returns a reply, but that reply includes an error,
-    // log the error message.
+    // If Google's server returns a reply, but that reply includes an error, log
+    // the error message.
     if ($info['http_code'] == 200 && (!empty($response->failure))) {
       watchdog('push_notifications', "Google's Server returned an error: @response", array(
         '@response' => $response_raw,
@@ -941,8 +972,9 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
       // Analyze the failure.
       foreach ($response->results as $token_index => $message_result) {
         if (!empty($message_result->error)) {
-          // If the device token is invalid or not registered (anymore because the user
-          // has uninstalled the application), remove this device token.
+          // If the device token is invalid or not registered (anymore because
+          // the user has uninstalled the application), remove this device
+          // token.
           if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
             push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
             watchdog('push_notifications', 'FCM token not valid anymore. Removing token @token', array(
@@ -965,31 +997,32 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_fcm_send', array(
-        'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
-        'payload' => $payload,
-        'count_attempted' => $result['count_attempted'],
-        'count_success' => $result['count_success'],
-        'success' => $result['success'],
-        'result_message' => $result['message'],
-      )
-    );
+      'type_id' => PUSH_NOTIFICATIONS_TYPE_ID_ANDROID,
+      'payload' => $payload,
+      'count_attempted' => $result['count_attempted'],
+      'count_success' => $result['count_success'],
+      'success' => $result['success'],
+      'result_message' => $result['message'],
+    ));
   }
 
   return $result;
 }
 
 /**
- * Determine all recipients from a specific device type.
+ * Determines all recipients from a specific device type.
  *
- * @param array $filters Filter option for query. Allows filtering by:
- *   - Language (key = language)
- *   - Device type (key = type_id)
- *   - Account type (key = account_type)
- *   - Token (key = token)
- * @param $raw
- *   Boolean, set true to retrieve the raw query results.
+ * @param array $filters
+ *   Filter option for query. Allows filtering by:
+ *   - language: (string) Language
+ *   - type_id: Device type
+ *   - account_type: Account type, "anonymous" or "authenticated".
+ *   - token: Token.
+ * @param bool $raw
+ *   Boolean, set TRUE to retrieve the raw query results.
  *
- * @return mixed Array of results, null if no entries.
+ * @return mixed
+ *   Array of results, NULL if no entries.
  */
 function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   // Validate format of filters argument.
@@ -1002,7 +1035,7 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   $query->fields('pnt');
 
   // Filter by device type, if required.
-  if (array_key_exists('type_id', $filters) ) {
+  if (array_key_exists('type_id', $filters)) {
     $query->condition('pnt.type', $filters['type_id']);
   }
 
@@ -1012,14 +1045,12 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   }
 
   // Filter by anonymous vs. authenticated users.
-  if (
-    array_key_exists('account_type', $filters) &&
-    in_array($filters['account_type'], array('anonymous', 'authenticated'))
-  ) {
+  if (!empty($filters['account_type'])) {
     switch ($filters['account_type']) {
       case 'anonymous':
         $query->condition('pnt.uid', 0);
         break;
+
       case 'authenticated':
         $query->condition('pnt.uid', 0, '!=');
         break;
@@ -1027,7 +1058,7 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   }
 
   // Filter by token.
-  if (array_key_exists('token', $filters) && $filters['token']) {
+  if (!empty($filters['token'])) {
     $query->condition('pnt.token', $filters['token']);
   }
 
@@ -1047,14 +1078,14 @@ function push_notifications_get_tokens($filters = array(), $raw = FALSE) {
   }
 }
 
-
-
 /**
- * Determine all tokens for a specfic user.
+ * Determines all tokens for a specfic user.
  *
- * @param int $uid User Id.
- * @return array Array of token database records.
+ * @param int $uid
+ *   User Id.
  *
+ * @return array
+ *   Array of token database records.
  */
 function push_notification_get_user_tokens($uid) {
   if (!is_numeric($uid)) {
@@ -1075,11 +1106,11 @@ function push_notification_get_user_tokens($uid) {
   return $tokens;
 }
 
-
-
 /**
- * Determine any languages used in the push
- * notifications table.
+ * Determines any languages used in the push notifications table.
+ *
+ * @return array
+ *   An array of language options.
  */
 function push_notifications_used_languages() {
   $query = db_select('push_notifications_tokens', 'pnt');
@@ -1107,17 +1138,13 @@ function push_notifications_used_languages() {
   return $used_languages;
 }
 
-
-
 /**
- * Delete a token.
+ * Deletes a token.
  *
- * @param $token
+ * @param string $token
  *   Device token.
- *
  * @param $type_id
  *   Device Type ID.
- *
  */
 function push_notifications_purge_token($token = '', $type_id = '') {
   if ($token == '' || !is_string($token)) {
@@ -1130,10 +1157,9 @@ function push_notifications_purge_token($token = '', $type_id = '') {
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_before_token_delete', array(
-        'token' => $token,
-        'type_id' => $type_id,
-      )
-    );
+      'token' => $token,
+      'type_id' => $type_id,
+    ));
   }
 
   $query = db_delete('push_notifications_tokens');
@@ -1143,19 +1169,17 @@ function push_notifications_purge_token($token = '', $type_id = '') {
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_token_delete', array(
-        'token' => $token,
-        'type_id' => $type_id,
-      )
-    );
+      'token' => $token,
+      'type_id' => $type_id,
+    ));
   }
 
   return $result;
 }
 
-
-
 /**
  * Connect to Apple's feedback server to remove unused device tokens.
+ *
  * Connection modeled after daddyhunt_apns_send_notifications function.
  *
  * @see http://stackoverflow.com/questions/4774681/php-script-for-apple-push-notification-feedback-service-gets-timeout-every-time
@@ -1181,9 +1205,9 @@ function push_notifications_apns_feedback_service() {
     return;
   }
 
-  // Gather expired tokens in an array
+  // Gather expired tokens in an array.
   $tokens = array();
-    while (!feof($apns)) {
+  while (!feof($apns)) {
     $data = fread($apns, 38);
     if (strlen($data)) {
       $tokens[] = unpack("N1timestamp/n1length/H*devtoken", $data);
@@ -1208,18 +1232,18 @@ function push_notifications_apns_feedback_service() {
   // Invoke rules.
   if (module_exists('rules')) {
     rules_invoke_event_by_args('push_notifications_after_apns_feedback', array(
-        'counter' => $counter,
-      )
-    );
+      'counter' => $counter,
+    ));
   }
 
   // Give some feedback after the process finished.
-  watchdog('push_notifications', '!count were removed after pulling the Apple feedback service.', array('!count' => $counter));
-
+  watchdog('push_notifications', '!count were removed after pulling the Apple feedback service.', array(
+    '!count' => $counter,
+  ));
 }
 
 /**
- * Get the full path to the APNS certificate.
+ * Gets the full path to the APNS certificate.
  *
  * @return string
  *   The path to the certificate file on the server.
@@ -1240,11 +1264,9 @@ function _push_notifications_get_apns_certificate() {
   return drupal_realpath($path);
 }
 
-
-
 /**
-* Generate and set the random file ending for APNS certificates.
-*/
+ * Generates and sets the random file ending for APNS certificates.
+ */
 function _push_notifications_set_random_certificate_string() {
   // Generate a random 10-digit string.
   $random_string = substr(md5(microtime()), 0, 10);

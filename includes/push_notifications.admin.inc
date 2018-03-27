@@ -102,7 +102,6 @@ function push_notifications_admin_overview_form($form, $form_state) {
   return $form;
 }
 
-
 /**
  * Form callback for Push Notifications Settings.
  *
@@ -217,11 +216,11 @@ function push_notifications_admin_form($form, $form_state) {
   $form['configuration_android']['push_notifications_google_type'] = array(
     '#type' => 'radios',
     '#title' => t('Google Push Notifications Type'),
-    '#description' => t('Google\'s GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Each service requires a different authentication method.'),
+    '#description' => t("Google's GCM service (Google Cloud Messaging) is being replaced by the Firebase Cloud Messaging Service (FCM). Each service requires a different authentication method."),
     '#default_value' => PUSH_NOTIFICATIONS_GOOGLE_TYPE,
     '#options' => array(
       PUSH_NOTIFICATIONS_GOOGLE_TYPE_GCM => 'Google Cloud Messaging',
-      PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM => 'Firebase Cloud Messaging'
+      PUSH_NOTIFICATIONS_GOOGLE_TYPE_FCM => 'Firebase Cloud Messaging',
     ),
   );
 
@@ -378,7 +377,6 @@ function push_notifications_regenerate_certificate_string_submit($form, &$form_s
   _push_notifications_set_random_certificate_string();
   drupal_set_message(t('The names for your APNS certificates were successfully changed. Please rename both certificate files.'));
 }
-
 
 /**
  * Form callback for sending a mass-push notification.
