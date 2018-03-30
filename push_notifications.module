@@ -691,6 +691,12 @@ function push_notifications_apns_send_message($tokens, $payload) {
     $payload_apns['aps']['sound'] = PUSH_NOTIFICATIONS_APNS_NOTIFICATION_SOUND;
   }
 
+  // Special case.
+  if (isset($payload_apns['aps']['media-url'])) {
+    $payload_apns['media-url'] = $payload_apns['aps']['media-url'];
+    unset($payload_apns['aps']['media-url']);
+  }
+
   // JSON-encode the payload.
   $payload_apns = json_encode($payload_apns);
 
