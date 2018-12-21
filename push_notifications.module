@@ -836,7 +836,7 @@ function push_notifications_gcm_send_message($tokens, $payload) {
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
 
-    // Proxy support
+    // Proxy support.
     $proxy_server = variable_get('proxy_server', FALSE);
     if ($proxy_server) {
       $proxy_port = variable_get('proxy_port', '3128');
@@ -939,38 +939,46 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
   $token_bundles = ceil(count($tokens) / 1000);
   $result['count_attempted'] = count($tokens);
 
+  // Convert the payload into the correct format for FCM payloads.
+  // Prefill an array with values from other modules first.
+  $data = array();
+  foreach ($payload as $key => $value) {
+    // Set custom notification if provided.
+    if ($key == 'notification') {
+      $data['notification'] = $value;
+    }
+    // Skip alert.  It will be added later.
+    elseif ($key != 'alert') {
+      $data['data'][$key] = $value;
+    }
+  }
+
+  // Set data and notification bodies with alert.
+  $data['notification']['body'] = $payload['alert'];
+  if (!isset($data['data']['body'])) {
+    $data['data']['body'] = $payload['alert'];
+  }
+  // Set notification title if provided.
+  if (!isset($data['notification']['title']) && isset($payload['title'])) {
+    $data['notification']['title'] = $payload['title'];
+  }
+
+  $data = array_merge($data, $options);
+
+  // Let modules modify the message before it is sent.
+  foreach (module_implements('push_notifications_send_message') as $module) {
+    $function = $module . '_push_notifications_send_message';
+    $function($data, $type = 'simple');
+  }
+
   // Send a push notification to every recipient.
   for ($i = 0; $i < $token_bundles; $i++) {
     // Create a token bundle.
     $bundle_tokens = array_slice($tokens, $i * 1000, 1000, FALSE);
 
-    // Convert the payload into the correct format for FCM payloads.
-    // Prefill an array with values from other modules first.
-    $data = array();
-    foreach ($payload as $key => $value) {
-      // Set custom notification if provided.
-      if ($key == 'notification') {
-        $data['notification'] = $value;
-      }
-      // Skip alert.  It will be added later.
-      elseif ($key != 'alert') {
-        $data['data'][$key] = $value;
-      }
-    }
     // Fill the default values required for each payload.
-    $data['registration_ids'] = $bundle_tokens;
     $data['collapse_key'] = (string) time();
-    // Set data and notification bodies with alert.
-    $data['notification']['body'] = $payload['alert'];
-    if (!isset($data['data']['body'])) {
-      $data['data']['body'] = $payload['alert'];
-    }
-    // Set notification title if provided.
-    if (!isset($data['notification']['title']) && isset($payload['title'])) {
-      $data['notification']['title'] = $payload['title'];
-    }
-
-    $data = array_merge($data, $options);
+    $data['registration_ids'] = $bundle_tokens;
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL);
@@ -980,14 +988,14 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
 
-    // Proxy support
+    // Proxy support.
     $proxy_server = variable_get('proxy_server', FALSE);
     if ($proxy_server) {
       $proxy_port = variable_get('proxy_port', '3128');
       $proxy = "$proxy_server:$proxy_port";
       curl_setopt($curl, CURLOPT_PROXY, $proxy);
     }
-    
+
     $response_raw = curl_exec($curl);
     $info = curl_getinfo($curl);
     curl_close($curl);
