@@ -835,6 +835,15 @@ function push_notifications_gcm_send_message($tokens, $payload) {
     curl_setopt($curl, CURLOPT_POST, TRUE);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+
+    // Proxy support
+    $proxy_server = variable_get('proxy_server', FALSE);
+    if ($proxy_server) {
+      $proxy_port = variable_get('proxy_port', '3128');
+      $proxy = "$proxy_server:$proxy_port";
+      curl_setopt($curl, CURLOPT_PROXY, $proxy);
+    }
+
     $response_raw = curl_exec($curl);
     $info = curl_getinfo($curl);
     curl_close($curl);
@@ -970,6 +979,15 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     curl_setopt($curl, CURLOPT_POST, TRUE);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+
+    // Proxy support
+    $proxy_server = variable_get('proxy_server', FALSE);
+    if ($proxy_server) {
+      $proxy_port = variable_get('proxy_port', '3128');
+      $proxy = "$proxy_server:$proxy_port";
+      curl_setopt($curl, CURLOPT_PROXY, $proxy);
+    }
+    
     $response_raw = curl_exec($curl);
     $info = curl_getinfo($curl);
     curl_close($curl);
