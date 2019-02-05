@@ -947,6 +947,9 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     if ($key == 'notification') {
       $data['notification'] = $value;
     }
+    elseif ($key == 'priority') {
+      $data['priority'] = $value;
+    }
     // Skip alert.  It will be added later.
     elseif ($key != 'alert') {
       $data['data'][$key] = $value;
