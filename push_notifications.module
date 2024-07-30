@@ -933,7 +933,14 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
   // Define the header.
   $headers = array();
   $headers[] = 'Content-Type:application/json';
-  $headers[] = 'Authorization: key=' . PUSH_NOTIFICATIONS_FCM_SERVER_KEY;
+  $auth_token = push_notifications_fcm_get_auth_token();
+  if ($auth_token) {
+    $headers[] = 'Authorization: Bearer ' . $auth_token;
+  } else {
+    $result['message'] = t('FCM Auth string. Please set the FCM Auth string in push_notifications_fcm_config_string variable.');
+    watchdog('push_notifications', $result['message'], array(), WATCHDOG_ERROR);
+    return $result;
+  }
 
   // Check of many token bundles can be build.
   $token_bundles = ceil(count($tokens) / 1000);
@@ -945,25 +952,28 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
   foreach ($payload as $key => $value) {
     // Set custom notification if provided.
     if ($key == 'notification') {
-      $data['notification'] = $value;
+      $data['message']['notification'] = $value;
     }
     elseif ($key == 'priority') {
-      $data['priority'] = $value;
+      $data['message']['android']['priority'] = $value;
+    }
+    elseif ($key == 'sound') {
+      $data['message']['android']['sound'] = $value;
     }
     // Skip alert.  It will be added later.
     elseif ($key != 'alert') {
-      $data['data'][$key] = $value;
+      $data['message']['data'][$key] = $value;
     }
   }
 
   // Set data and notification bodies with alert.
-  $data['notification']['body'] = $payload['alert'];
-  if (!isset($data['data']['body'])) {
-    $data['data']['body'] = $payload['alert'];
+  $data['message']['notification']['body'] = $payload['alert'];
+  if (!isset($data['message']['data']['body'])) {
+    $data['message']['data']['body'] = $payload['alert'];
   }
   // Set notification title if provided.
-  if (!isset($data['notification']['title']) && isset($payload['title'])) {
-    $data['notification']['title'] = $payload['title'];
+  if (!isset($data['message']['notification']['title']) && isset($payload['title'])) {
+    $data['message']['notification']['title'] = $payload['title'];
   }
 
   $data = array_merge($data, $options);
@@ -980,16 +990,15 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     $bundle_tokens = array_slice($tokens, $i * 1000, 1000, FALSE);
 
     // Fill the default values required for each payload.
-    $data['collapse_key'] = (string) time();
-    $data['registration_ids'] = $bundle_tokens;
+    $data['message']['android']['collapse_key'] = (string) time();
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL);
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+    // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
     curl_setopt($curl, CURLOPT_POST, TRUE);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+
 
     // Proxy support.
     $proxy_server = variable_get('proxy_server', FALSE);
@@ -998,43 +1007,40 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
       $proxy = "$proxy_server:$proxy_port";
       curl_setopt($curl, CURLOPT_PROXY, $proxy);
     }
+    foreach ($bundle_tokens as $token) {
+      $data['message']['token'] = $token;
+      curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+      $response_raw = curl_exec($curl);
 
-    $response_raw = curl_exec($curl);
-    $info = curl_getinfo($curl);
-    curl_close($curl);
+      $info = curl_getinfo($curl);
 
-    $response = FALSE;
-    if (isset($response_raw)) {
-      $response = json_decode($response_raw);
-    }
+      $response = FALSE;
+      if (isset($response_raw)) {
+        $response = json_decode($response_raw);
+      }
 
-    // If Google's server returns a reply, but that reply includes an error, log
-    // the error message.
-    if ($info['http_code'] == 200 && (!empty($response->failure))) {
-      watchdog('push_notifications', "Google's Server returned an error: @response", array(
-        '@response' => $response_raw,
-      ), WATCHDOG_ERROR);
+      // If Google's server returns a reply, but that reply includes an error, log
+      // the error message.
+      if ($info['http_code'] != 200 && (!empty($response->error))) {
+        watchdog('push_notifications', "Google's Server returned an error: @response", array(
+          '@response' => $response_raw,
+        ), WATCHDOG_ERROR);
 
-      // Analyze the failure.
-      foreach ($response->results as $token_index => $message_result) {
-        if (!empty($message_result->error)) {
-          // If the device token is invalid or not registered (anymore because
-          // the user has uninstalled the application), remove this device
-          // token.
-          if ($message_result->error == 'NotRegistered' || $message_result->error == 'InvalidRegistration') {
-            push_notifications_purge_token($bundle_tokens[$token_index], PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
-            watchdog('push_notifications', 'FCM token not valid anymore. Removing token @token', array(
-              '@token' => $bundle_tokens[$token_index],
-            ));
-          }
+        // Analyze the failure.
+        if ($response->error->code == 400 && $response->error->message == 'The registration token is not a valid FCM registration token') {
+          push_notifications_purge_token($token, PUSH_NOTIFICATIONS_TYPE_ID_ANDROID);
+          watchdog('push_notifications', 'FCM token not valid anymore. Removing token @token', array(
+            '@token' => $token,
+          ));
         }
       }
-    }
 
-    // Count the successful sent push notifications if there are any.
-    if ($info['http_code'] == 200 && !empty($response->success)) {
-      $result['count_success'] += $response->success;
+      // Count the successful sent push notifications if there are any.
+      if ($info['http_code'] == 200 && !empty($response->name)) {
+        $result['count_success'] += 1;
+      }
     }
+    curl_close($curl);
   }
 
   $result['message'] = t('Successfully sent !count_success Firebase Cloud Messages (attempted to send !count messages).', array('!count_success' => $result['count_success'], '!count' => $result['count_attempted']));
@@ -1053,6 +1059,90 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
   }
 
   return $result;
+}
+
+// This function is needed, because php doesn't have support for base64UrlEncoded strings
+function base64UrlEncode($text)
+{
+  return str_replace(
+    ['+', '/', '='],
+    ['-', '_', ''],
+    base64_encode($text)
+  );
+}
+
+function push_notifications_fcm_get_auth_token() {
+
+  // Read service account details
+  // $authConfigString = file_get_contents("vcs/fw-agora-firebase-adminsdk-cn9wz-7ea91fbede.json");
+  $authConfigString = variable_get('push_notifications_fcm_config_string', '');
+  if (empty($authConfigString)) {
+    return FALSE;
+  }
+  // Parse service account details
+  $authConfig = json_decode($authConfigString);
+
+  // Read private key from service account details
+  $secret = openssl_get_privatekey($authConfig->private_key);
+
+  // Create the token header
+  $header = json_encode([
+    'typ' => 'JWT',
+    'alg' => 'RS256'
+  ]);
+
+  // Get seconds since 1 January 1970
+  $time = time();
+
+  // Allow 1 minute time deviation between client en server (not sure if this is necessary)
+  $start = $time - 60;
+  $end = $start + 3600;
+
+  // Create payload
+  $payload = json_encode([
+    "iss" => $authConfig->client_email,
+    "scope" => "https://www.googleapis.com/auth/firebase.messaging",
+    "aud" => "https://oauth2.googleapis.com/token",
+    "exp" => $end,
+    "iat" => $start
+  ]);
+
+  // Encode Header
+  $base64UrlHeader = base64UrlEncode($header);
+
+  // Encode Payload
+  $base64UrlPayload = base64UrlEncode($payload);
+
+  // Create Signature Hash
+  $result = openssl_sign($base64UrlHeader . "." . $base64UrlPayload, $signature, $secret, OPENSSL_ALGO_SHA256);
+
+  // Encode Signature to Base64Url String
+  $base64UrlSignature = base64UrlEncode($signature);
+
+  // Create JWT
+  $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
+
+  //-----Request token, with an http post request------
+  $options = array('http' => array(
+    'method'  => 'POST',
+    'content' => 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='.$jwt,
+    'header'  => "Content-Type: application/x-www-form-urlencoded"
+  ));
+  // Proxy support.
+  $proxy_server = variable_get('proxy_server', FALSE);
+  if ($proxy_server) {
+    $proxy_port = variable_get('proxy_port', '3128');
+    $proxy = "tcp://$proxy_server:$proxy_port";
+    $options['http']['proxy'] = $proxy;
+    $options['http']['request_fulluri'] = TRUE;
+  }
+
+  $context  = stream_context_create($options);
+  $responseText = file_get_contents("https://oauth2.googleapis.com/token", false, $context);
+
+  $response = json_decode($responseText);
+
+  return $response->access_token;
 }
 
 /**
