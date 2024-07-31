@@ -1123,24 +1123,49 @@ function push_notifications_fcm_get_auth_token() {
   $jwt = $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
 
   //-----Request token, with an http post request------
-  $options = array('http' => array(
-    'method'  => 'POST',
-    'content' => 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='.$jwt,
-    'header'  => "Content-Type: application/x-www-form-urlencoded"
-  ));
+//  $options = array('http' => array(
+//    'method'  => 'POST',
+//    'content' => 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='.$jwt,
+//    'header'  => "Content-Type: application/x-www-form-urlencoded"
+//  ));
+//  // Proxy support.
+//  $proxy_server = variable_get('proxy_server', FALSE);
+//  if ($proxy_server) {
+//    $proxy_port = variable_get('proxy_port', '3128');
+//    $proxy = "tcp://$proxy_server:$proxy_port";
+//    $options['http']['proxy'] = $proxy;
+//    $options['http']['request_fulluri'] = TRUE;
+//  }
+//
+//  $context  = stream_context_create($options);
+//  $responseText = file_get_contents("https://oauth2.googleapis.com/token", false, $context);
+
+  $headers = ['Content-Type: application/x-www-form-urlencoded'];
+  $curl = curl_init();
+  curl_setopt($curl, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
+  curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+  // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+  curl_setopt($curl, CURLOPT_POST, TRUE);
+  curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+
+
   // Proxy support.
   $proxy_server = variable_get('proxy_server', FALSE);
   if ($proxy_server) {
     $proxy_port = variable_get('proxy_port', '3128');
-    $proxy = "tcp://$proxy_server:$proxy_port";
-    $options['http']['proxy'] = $proxy;
-    $options['http']['request_fulluri'] = TRUE;
+    $proxy = "$proxy_server:$proxy_port";
+    curl_setopt($curl, CURLOPT_PROXY, $proxy);
   }
 
-  $context  = stream_context_create($options);
-  $responseText = file_get_contents("https://oauth2.googleapis.com/token", false, $context);
+  curl_setopt($curl, CURLOPT_POSTFIELDS, 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion='.$jwt);
+  $response_raw = curl_exec($curl);
 
-  $response = json_decode($responseText);
+  curl_close($curl);
+
+  $response = FALSE;
+  if (isset($response_raw)) {
+    $response = json_decode($response_raw);
+  }
 
   return $response->access_token;
 }
