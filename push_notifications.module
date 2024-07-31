@@ -995,7 +995,7 @@ function push_notifications_fcm_send_message($tokens, $payload, $options = array
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, PUSH_NOTIFICATIONS_FCM_SERVER_POST_URL);
     curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-    // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+    curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
     curl_setopt($curl, CURLOPT_POST, TRUE);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
 
@@ -1073,6 +1073,11 @@ function base64UrlEncode($text)
 
 function push_notifications_fcm_get_auth_token() {
 
+  static $token = NULL;
+  if ($token) {
+    return $token;
+  }
+
   // Read service account details
   // $authConfigString = file_get_contents("vcs/fw-agora-firebase-adminsdk-cn9wz-7ea91fbede.json");
   $authConfigString = variable_get('push_notifications_fcm_config_string', '');
@@ -1144,7 +1149,7 @@ function push_notifications_fcm_get_auth_token() {
   $curl = curl_init();
   curl_setopt($curl, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
   curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-  // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+  curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
   curl_setopt($curl, CURLOPT_POST, TRUE);
   curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
 
@@ -1166,8 +1171,8 @@ function push_notifications_fcm_get_auth_token() {
   if (isset($response_raw)) {
     $response = json_decode($response_raw);
   }
-
-  return $response->access_token;
+  $token = $response->access_token;
+  return $token;
 }
 
 /**
